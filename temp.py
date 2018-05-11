@@ -1,11 +1,12 @@
 import urllib.request
 import codecs
 import re
+from expand import normalize_numbers
 import nltk
 from nltk import pos_tag
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict
-
+import unicodedata
 nltk.download('cmudict')
 cmu = cmudict.dict()
 #
@@ -54,31 +55,39 @@ def word2pron(word):
 word = "resistentialism".upper()
 out = word2pron(word)
 print(out)
-# def token2pron(token):
-#     word, pos = token
-#     word = word.upper()
+def token2pron(token):
+    word, pos = token
+
+    word = ''.join(char for char in unicodedata.normalize('NFD', word)
+                   if unicodedata.category(char) != 'Mn')  # Strip accents
+    word = word.lower()
+
+    if word in homograph2features: # Check homograph
+        pron1, pron2, pos1 = homograph2features[word]
+        if pos.startswith(pos1):
+            pron = pron1
+        else:
+            pron = pron2
+    elif word in word2pron: # CMU dict
+        pron = word2pron(word)
+    else:
+        pron = model.predict
+    return pron
+
 #
-#     if word in homograph2features: # Check homograph
-#         pron1, pron2, pos1 = homograph2features[word]
-#         if pos.startswith(pos1):
-#             pron = pron1
-#         else:
-#             pron = pron2
-#     elif word in word2pron: # CMU dict
-#         pron = word2pron(word)
 #
 #
 #
-#
-#
-# def g2p(text):
-#     tokens = word_tokenize(text)
-#     ret = []
-#     for token in tokens:
-#         pron = word2pron(token)
-#         ret.extend(pron.split())
-#         ret.append(" ")
-#     ret = ret[:-1]
+def g2p(text):
+    text = normalize_numbers(text)
+    tokens = word_tokenize(text)
+    ret = []
+    for token in tokens:
+        pron = token2pron(token) # list of phonemes
+        ret.extend(pron)
+        ret.extend([" "])
+    ret = ret[:-1]
+    return ret
 #
 #
 # AH0 F AO1 R D AH0 B AH0 L
