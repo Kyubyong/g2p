@@ -1,18 +1,23 @@
 import urllib.request
 import codecs
 import re
+import nltk
 from nltk import pos_tag
 from nltk.tokenize import word_tokenize
+from nltk.corpus import cmudict
 
-# step1. construct cmu lookup dictionary
-url = "http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-0.7b"
-
-cmu = dict()
-lines = urllib.request.urlopen(url).read().decode('utf-8', errors="replace").splitlines()
-for line in lines:
-    if line.startswith(";;;"): continue # comments
-    word, pron = line.split("  ")
-    cmu[word] = pron
+nltk.download('cmudict')
+cmu = cmudict.dict()
+#
+# # step1. construct cmu lookup dictionary
+# url = "http://svn.code.sf.net/p/cmusphinx/code/trunk/cmudict/cmudict-0.7b"
+#
+# cmu = dict()
+# lines = urllib.request.urlopen(url).read().decode('utf-8', errors="replace").splitlines()
+# for line in lines:
+#     if line.startswith(";;;"): continue # comments
+#     word, pron = line.split("  ")
+#     cmu[word] = pron
 
 # step2. construct homograph dictionary
 f = 'homographs.en'
