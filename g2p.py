@@ -37,8 +37,8 @@ config = tf.ConfigProto(
              gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.0001)
          )
 
-g_sess = None
-class Session:
+g_sess = None # global session
+class Session: # make/remove global session
     def __enter__(self):
         global g_sess
         if g_sess != None:
@@ -54,11 +54,11 @@ class Session:
 def predict(word, sess):
     '''
     Returns predicted pronunciation of `word` which does NOT exist in the dictionary.
-    :param word: string.
+    :param word: string list.
     :return: pron: A list of phonemes
     '''
-    if len(word)>5:
-        pron = predict(word[5:],sess)
+    if len(word)>32: # 32 : batch size.
+        pron = predict(word[32:],sess)
     else:
         pron = []
 
@@ -66,29 +66,13 @@ def predict(word, sess):
     for i,w in enumerate(word):
         for j,g in enumerate((w+"E")[:hp.maxlen]):
             x[i][j] = g2idx.get(g,2) # 2:<UNK>
-    preds = np.zeros((len(word),hp.maxlen), np.int32)
-    '''
-    graphemes = word + "E"  # EOS
-    graphemes += "P" * hp.maxlen  # Padding
-
-    x = [g2idx.get(g, 2) for g in graphemes[:hp.maxlen]]  # 2: <UNK>
-    x = np.array(x, np.int32)
-    x = np.expand_dims(x, 0) # (1, maxlen)
-
-
+    
     ## Autoregressive inference
-    preds = np.zeros((1, hp.maxlen), np.int32)
-    '''
+    preds = np.zeros((len(word),hp.maxlen), np.int32)
     for j in range(hp.maxlen):
         _preds = sess.run(graph.preds, {graph.x: x, graph.y: preds})
         preds[:, j] = _preds[:, j]
-    '''
-    # convert to string
-    pron = [idx2p[idx] for idx in preds[0]]
-    if "<EOS>" in pron:
-        eos = pron.index("<EOS>")
-        pron = pron[:eos]
-    '''
+    
     # convert to string
     for i in range(len(word)):
         p = [idx2p[idx] for idx in preds[i]]
@@ -162,16 +146,13 @@ def g2p(text):
         ret.extend([" "])
     if len(unseen)>0:
         global g_sess
-        if g_sess != None: # Already defined
+        if g_sess != None: # check global session
             prons = predict(unseen,g_sess)
             for i in range(len(unseen)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
-        else: # If not defined, assign new one.
+        else: # If global session not defined, make new one as local.
             with tf.Session(graph=g, config=config) as sess:
-                saver.restore(sess, tf.train.latest_checkpoint(hp.logdir))#; print("Restored!")
-                #for u in reversed(unseen):
-                #    pron = predict(u[0],sess)
-                #    ret = ret[:u[1]]+pron+ret[u[1]:]
+                saver.restore(sess, tf.train.latest_checkpoint(hp.logdir))
                 prons = predict(unseen,sess)
                 for i in range(len(unseen)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
