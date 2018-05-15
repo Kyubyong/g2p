@@ -19,7 +19,9 @@ from nltk import pos_tag
 from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict
 
+from builtins import str as unicode
 
+dirname = os.path.dirname(__file__)
 
 cmu = cmudict.dict()
 
@@ -44,7 +46,7 @@ class Session: # make/remove global session
         if g_sess != None:
             raise Exception('Session already exist in g2p')
         g_sess = tf.Session(graph=g, config=config)
-        saver.restore(g_sess, tf.train.latest_checkpoint(hp.logdir))
+        saver.restore(g_sess, tf.train.latest_checkpoint(os.path.join(dirname,hp.logdir)))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         global g_sess
@@ -75,7 +77,7 @@ def predict(word, sess):
     
     # convert to string
     for i in range(len(word)):
-        p = [idx2p[idx] for idx in preds[i]]
+        p = [u"%s"%unicode(idx2p[idx]) for idx in preds[i]] # Make p into unicode.
         if "<EOS>" in p:
             eos = p.index("<EOS>")
             p = p[:eos]
@@ -83,7 +85,7 @@ def predict(word, sess):
     return pron
 
 # Construct homograph dictionary
-f = 'homographs.en'
+f = os.path.join(dirname,'homographs.en')
 homograph2features = dict()
 for line in codecs.open(f, 'r', 'utf8').read().splitlines():
     if line.startswith("#"): continue # comment
@@ -152,7 +154,7 @@ def g2p(text):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
         else: # If global session not defined, make new one as local.
             with tf.Session(graph=g, config=config) as sess:
-                saver.restore(sess, tf.train.latest_checkpoint(hp.logdir))
+                saver.restore(sess, tf.train.latest_checkpoint(os.path.join(dirname,hp.logdir)))
                 prons = predict(unseen,sess)
                 for i in range(len(unseen)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
@@ -160,8 +162,8 @@ def g2p(text):
 
 
 if __name__ == '__main__':
-    text = u"I need your Résumé. She is my girl. He's my activationist activationist activationist."
-    text = u"abb "*20
+    text = u"I need your Résumé. She is my girl. He's my activationist."
+    #text = u"ab "*20
     out = g2p(text)
     print(out)
 

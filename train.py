@@ -6,7 +6,7 @@ https://www.github.com/kyubyong/g2p
 '''
 from __future__ import print_function
 
-import tqdm
+#import tqdm
 import distance
 
 import tensorflow as tf
@@ -128,7 +128,8 @@ if __name__ == '__main__':
             X_train, Y_train = X_train[ids], Y_train[ids]
 
             # batch train
-            for i in tqdm.tqdm(range(0, len(X_train), hp.batch_size), total=len(X_train) // hp.batch_size):
+            #for i in tqdm.tqdm(range(0, len(X_train), hp.batch_size), total=len(X_train) // hp.batch_size):
+            for i in range(0, len(X_train)):
                 x_train = X_train[i: i + hp.batch_size]
                 y_train = Y_train[i: i + hp.batch_size]
                 _, loss = sess.run([g.train_op, g.mean_loss], {g.x: x_train, g.y: y_train})
