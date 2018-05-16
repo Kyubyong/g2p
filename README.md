@@ -64,4 +64,4 @@ OR
 
 May, 2018.
 
-Kyubyong Park & [Joneseok Kim](https://github.com/ozmig77)
+Kyubyong Park & [Jongseok Kim](https://github.com/ozmig77)
