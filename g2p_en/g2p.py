@@ -7,6 +7,19 @@ https://www.github.com/kyubyong/g2p
 from __future__ import print_function
 
 import tensorflow as tf
+
+from nltk import pos_tag
+from nltk.corpus import cmudict
+import nltk
+try:
+    nltk.data.find('taggers/averaged_perceptron_tagger.zip')
+except LookupError:
+    nltk.download('averaged_perceptron_tagger')
+try:
+    nltk.data.find('corpora/cmudict.zip')
+except LookupError:
+    nltk.download('cmudict')
+
 from train import Graph, hp, load_vocab
 import numpy as np
 import codecs
@@ -14,10 +27,6 @@ import re
 import os
 import unicodedata
 from expand import normalize_numbers
-
-from nltk import pos_tag
-from nltk.corpus import cmudict
-
 from builtins import str as unicode
 
 dirname = os.path.dirname(__file__)

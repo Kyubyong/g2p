@@ -1,4 +1,4 @@
-# g2p: A Simple Python Module for English Grapheme To Phoneme Conversion
+# g2p_en: A Simple Python Module for English Grapheme To Phoneme Conversion
 
 This module is designed to convert English graphemes (spelling) to phonemes (pronunciation).
 It is considered essential in several tasks such as speech synthesis.
@@ -40,11 +40,12 @@ In this project, we employ a deep learning seq2seq framework based on TensorFlow
 
 ## Installation
 
-    pip install g2p
+    pip install g2p_en
 OR
 
     python setup.py install
 
+nltk package will be automatically downloaded at your first run.
 
 ## Training (Note that pretrained model is already included)
 
@@ -52,7 +53,7 @@ OR
 
 ## Usage
 
-    from g2p import g2p
+    from g2p_en import g2p
 
     text = "I refuse to collect the refuse around here."
     print(g2p(text))
@@ -61,6 +62,13 @@ OR
     text = "I am an activationist."
     print(g2p(text))
     >>>[u'AY1', u'M', ' ', u'AE1', u'N', ' ', u'AE2', u'K', u'T', u'AH0', u'V', u'EY1', u'SH', u'AH0', u'N', u'IH0', u'S', u'T']
+
+If you need to convert lots of texts, you can use the global tf session.
+
+    import g2p_en as g2p
+
+    with g2p.Session():
+        phs = [g2p.g2p(text) for text in texts]
 
 May, 2018.
 
