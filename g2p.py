@@ -11,12 +11,11 @@ from train import Graph, hp, load_vocab
 import numpy as np
 import codecs
 import re
-import os, sys
+import os
 import unicodedata
 from expand import normalize_numbers
 
 from nltk import pos_tag
-from nltk.tokenize import word_tokenize
 from nltk.corpus import cmudict
 
 from builtins import str as unicode
@@ -53,38 +52,39 @@ class Session: # make/remove global session
         g_sess.close()
         g_sess = None
 
+
 def predict(word, sess):
     '''
     Returns predicted pronunciation of `word` which does NOT exist in the dictionary.
     :param word: string list.
     :return: pron: A list of phonemes
     '''
-    B = 2 # B : batch size
-    if len(word)>B: 
-        after = predict(word[B:],sess)
-        word = word[:B]
+    if len(word) > hp.batch_size:
+        after = predict(word[hp.batch_size:], sess)
+        word = word[:hp.batch_size]
     else:
         after = []
-    x = np.zeros((len(word),hp.maxlen), np.int32) # 0: <PAD>
-    for i,w in enumerate(word):
-        for j,g in enumerate((w+"E")[:hp.maxlen]):
-            x[i][j] = g2idx.get(g,2) # 2:<UNK>
-    
+    x = np.zeros((len(word), hp.maxlen), np.int32)  # 0: <PAD>
+    for i, w in enumerate(word):
+        for j, g in enumerate((w + "E")[:hp.maxlen]):
+            x[i][j] = g2idx.get(g, 2)  # 2:<UNK>
+
     ## Autoregressive inference
-    preds = np.zeros((len(word),hp.maxlen), np.int32)
+    preds = np.zeros((len(word), hp.maxlen), np.int32)
     for j in range(hp.maxlen):
         _preds = sess.run(graph.preds, {graph.x: x, graph.y: preds})
         preds[:, j] = _preds[:, j]
-    
+
     # convert to string
     pron = []
     for i in range(len(word)):
-        p = [u"%s"%unicode(idx2p[idx]) for idx in preds[i]] # Make p into unicode.
+        p = [u"%s" % unicode(idx2p[idx]) for idx in preds[i]]  # Make p into unicode.
         if "<EOS>" in p:
             eos = p.index("<EOS>")
             p = p[:eos]
         pron.append(p)
-    return pron+after
+
+    return pron + after
 
 # Construct homograph dictionary
 f = os.path.join(dirname,'homographs.en')
@@ -98,7 +98,7 @@ def token2pron(token):
     '''
     Returns pronunciation of word based on its pos.
     :param token: A tuple of (word, pos)
-    :return: A list of phonemes
+    :return: A list of phonemes. If word is not in the dictionary, [] is returned.
     '''
     word, pos = token
 
@@ -114,10 +114,18 @@ def token2pron(token):
     elif word in cmu: # CMU dict
         pron = cmu[word][0]
     else:
-        return [], True
-        #pron = predict(word,sess)
+        return []
 
-    return pron, False
+    return pron
+
+def tokenize(text):
+    '''
+    Splits text into `tokens`.
+    :param text: A string.
+    :return: A list of tokens (string).
+    '''
+    text = re.sub('([.,?!] )', r' \1', text)
+    return text.split()
 
 def g2p(text):
     '''
@@ -131,52 +139,46 @@ def g2p(text):
     text = ''.join(char for char in unicodedata.normalize('NFD', text)
                    if unicodedata.category(char) != 'Mn')  # Strip accents
     text = text.lower()
+    text = re.sub("[^ a-z'.,?!\-]", "", text)
+    text = text.replace("i.e.", "that is")
+    text = text.replace("e.g.", "for example")
 
     # tokenization
-    words = word_tokenize(text)
+    words = tokenize(text)
     tokens = pos_tag(words) # tuples of (word, tag)
 
     # g2p
-    unseen = [] # Process unseen word at last 
-    u_loc = []
+    oovs, u_loc = [], []
     ret = []
     for token in tokens:
-        pron, is_unseen = token2pron(token) # list of phonemes
-        if is_unseen:
-            #unseen.append((token[0], len(ret))) # add (word, location)
-            unseen.append(token[0])
+        pron = token2pron(token) # list of phonemes
+        if pron == []: # oov
+            oovs.append(token[0])
             u_loc.append(len(ret))
         ret.extend(pron)
         ret.extend([" "])
-    if len(unseen)>0:
+
+    if len(oovs)>0:
         global g_sess
-        if g_sess != None: # check global session
-            prons = predict(unseen,g_sess)
-            for i in range(len(unseen)-1,-1,-1):
+        if g_sess is not None: # check global session
+            prons = predict(oovs, g_sess)
+            for i in range(len(oovs)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
-        else: # If global session not defined, make new one as local.
+        else: # If global session is not defined, make new one as local.
             with tf.Session(graph=g, config=config) as sess:
-                saver.restore(sess, tf.train.latest_checkpoint(os.path.join(dirname,hp.logdir)))
-                prons = predict(unseen,sess)
-                for i in range(len(unseen)-1,-1,-1):
+                saver.restore(sess, tf.train.latest_checkpoint(os.path.join(dirname, hp.logdir)))
+                prons = predict(oovs, sess)
+                for i in range(len(oovs)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
-        #print ("len",len(prons))
     return ret[:-1]
 
 
 if __name__ == '__main__':
-    text = u"I need your Résumé. She is my girl. He's my activationist."
-    #text = u"abb bba ccb "*3
-    out = g2p(text)
-    print(out)
+    texts = ["I have $250 in my pocket.", # number -> spell-out
+             "popular pets, e.g. cats and dogs", # e.g. -> for example
+             "I refuse to collect the refuse around here.", # homograph
+             "I'm an activationist."] # newly coined word
+    for text in texts:
+        out = g2p(text)
+        print(out)
 
-
-
-# GPU : 7.83 (#3)
-# CPU : 3.32 (#3)
-# CPU : using Graph. 2.91 (#3)
-# CPU : run session at first 1.51 (#3)
-# GPU : run session at first 5.61 (#3)
-
-# CPU : not using batch, activationist#10, 5.73 (#3)
-# CPU : using batch, activationist#10, 3.24 (#3)
