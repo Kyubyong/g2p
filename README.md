@@ -56,11 +56,11 @@ OR
 
     text = "I refuse to collect the refuse around here."
     print(g2p(text))
-    >>>[u'AY1', ' ', u'HH', u'AE1', u'V', ' ', u'T', u'UW1', ' ', u'HH', u'AH1', u'N', u'D', u'R', u'AH0', u'D', ' ', u'F', u'IH1', u'F', u'T', u'IY0', ' ', u'D', u'AA1', u'L', u'ER0', u'Z', ' ', u'IH0', u'N', ' ', u'M', u'AY1', ' ', u'P', u'AA1', u'K', u'AH0', u'T']
+    >>>[u'AY1', ' ', u'R', u'IH0', u'F', u'Y', u'UW1', u'Z', ' ', u'T', u'UW1', ' ', u'K', u'AH0', u'L', u'EH1', u'K', u'T', ' ', u'DH', u'AH0', ' ', u'R', u'EH1', u'F', u'Y', u'UW2', u'Z', ' ', u'ER0', u'AW1', u'N', u'D', ' ', u'HH', u'EH1', u'R']
 
     text = "I am an activationist."
     print(g2p(text))
-    [u'AY1', u'M', ' ', u'AE1', u'N', ' ', u'AE2', u'K', u'T', u'AH0', u'V', u'EY1', u'SH', u'AH0', u'N', u'IH0', u'S', u'T']
+    >>>[u'AY1', u'M', ' ', u'AE1', u'N', ' ', u'AE2', u'K', u'T', u'AH0', u'V', u'EY1', u'SH', u'AH0', u'N', u'IH0', u'S', u'T']
 
 May, 2018.
 
