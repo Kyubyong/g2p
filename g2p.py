@@ -59,11 +59,12 @@ def predict(word, sess):
     :param word: string list.
     :return: pron: A list of phonemes
     '''
-    if len(word)>32: # 32 : batch size.
-        pron = predict(word[32:],sess)
+    B = 2 # B : batch size
+    if len(word)>B: 
+        after = predict(word[B:],sess)
+        word = word[:B]
     else:
-        pron = []
-
+        after = []
     x = np.zeros((len(word),hp.maxlen), np.int32) # 0: <PAD>
     for i,w in enumerate(word):
         for j,g in enumerate((w+"E")[:hp.maxlen]):
@@ -76,13 +77,14 @@ def predict(word, sess):
         preds[:, j] = _preds[:, j]
     
     # convert to string
+    pron = []
     for i in range(len(word)):
         p = [u"%s"%unicode(idx2p[idx]) for idx in preds[i]] # Make p into unicode.
         if "<EOS>" in p:
             eos = p.index("<EOS>")
             p = p[:eos]
         pron.append(p)
-    return pron
+    return pron+after
 
 # Construct homograph dictionary
 f = os.path.join(dirname,'homographs.en')
@@ -158,12 +160,13 @@ def g2p(text):
                 prons = predict(unseen,sess)
                 for i in range(len(unseen)-1,-1,-1):
                     ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
+        #print ("len",len(prons))
     return ret[:-1]
 
 
 if __name__ == '__main__':
     text = u"I need your Résumé. She is my girl. He's my activationist."
-    #text = u"ab "*20
+    #text = u"abb bba ccb "*3
     out = g2p(text)
     print(out)
 
