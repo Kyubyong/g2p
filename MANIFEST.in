@@ -1,0 +1,2 @@
+include g2p_en/homographs.en
+include g2p_en/logdir/*
