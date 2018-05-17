@@ -1,5 +1,6 @@
 MANIFEST.in
 README.md
+README.rst
 setup.cfg
 setup.py
 g2p_en/__init__.py
