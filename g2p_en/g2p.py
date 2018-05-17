@@ -133,7 +133,7 @@ def tokenize(text):
     :param text: A string.
     :return: A list of tokens (string).
     '''
-    text = re.sub('([.,?!] )', r' \1', text)
+    text = re.sub('([.,?!]( |$))', r' \1', text)
     return text.split()
 
 def g2p(text):
