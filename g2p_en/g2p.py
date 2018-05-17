@@ -62,31 +62,31 @@ class Session: # make/remove global session
         g_sess = None
 
 
-def predict(word, sess):
+def predict(words, sess):
     '''
-    Returns predicted pronunciation of `word` which does NOT exist in the dictionary.
-    :param word: string list.
+    Returns predicted pronunciation of `words` which do NOT exist in the dictionary.
+    :param words: A list of words.
     :return: pron: A list of phonemes
     '''
-    if len(word) > hp.batch_size:
-        after = predict(word[hp.batch_size:], sess)
-        word = word[:hp.batch_size]
+    if len(words) > hp.batch_size:
+        after = predict(words[hp.batch_size:], sess)
+        words = words[:hp.batch_size]
     else:
         after = []
-    x = np.zeros((len(word), hp.maxlen), np.int32)  # 0: <PAD>
-    for i, w in enumerate(word):
+    x = np.zeros((len(words), hp.maxlen), np.int32)  # 0: <PAD>
+    for i, w in enumerate(words):
         for j, g in enumerate((w + "E")[:hp.maxlen]):
             x[i][j] = g2idx.get(g, 2)  # 2:<UNK>
 
     ## Autoregressive inference
-    preds = np.zeros((len(word), hp.maxlen), np.int32)
+    preds = np.zeros((len(x), hp.maxlen), np.int32)
     for j in range(hp.maxlen):
         _preds = sess.run(graph.preds, {graph.x: x, graph.y: preds})
         preds[:, j] = _preds[:, j]
 
     # convert to string
     pron = []
-    for i in range(len(word)):
+    for i in range(len(preds)):
         p = [u"%s" % unicode(idx2p[idx]) for idx in preds[i]]  # Make p into unicode.
         if "<EOS>" in p:
             eos = p.index("<EOS>")
