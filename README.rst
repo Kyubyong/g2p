@@ -18,7 +18,7 @@ below.) Second, you can't check if the word is not in the dictionary.
    \a.  I refuse to collect the refuse around here. (rɪ\|fju:z as verb vs. \|refju:s as noun)
 
 -
-   \b.  I am an activationist. (activationist: newly coined word which means ``n. A person who designs and implements programs of treatment or therapy that use recreation and activities to help people whose functional abilities are affected by illness or disability.`` from `WORD SPY <https://wordspy.com/index.php?word=activationist%5D>`__
+   \b.  I am an activationist. (activationist: newly coined word which means ``n. A person who designs and implements programs of treatment or therapy that use recreation and activities to help people whose functional abilities are affected by illness or disability.`` from `WORD SPY <https://wordspy.com/index.php?word=activationist>`__
 
 For the first homograph issue, fortunately many homographs can be
 disambiguated using their part-of-speech, if not all. When it comes to
