@@ -20,13 +20,14 @@ try:
 except LookupError:
     nltk.download('cmudict')
 
-from train import Graph, hp, load_vocab
+from .train import Graph, hp, load_vocab
+from .expand import normalize_numbers
+
 import numpy as np
 import codecs
 import re
 import os
 import unicodedata
-from expand import normalize_numbers
 from builtins import str as unicode
 
 dirname = os.path.dirname(__file__)

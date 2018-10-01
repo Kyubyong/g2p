@@ -7,7 +7,6 @@ Author: Kyubyong Park & Jongseok Kim
 Author-email: kbpark.linguist@gmail.com
 License: Apache Software License
 Download-URL: https://github.com/Kyubyong/g2p/archive/1.0.0.tar.gz
-Description-Content-Type: UNKNOWN
 Description: g2p\_en: A Simple Python Module for English Grapheme To Phoneme Conversion
         ==========================================================================
         
