@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
-# /usr/bin/python2
+# /usr/bin/python
 '''
-By kyubyong park. kbpark.linguist@gmail.com.
+By kyubyong park(kbpark.linguist@gmail.com) and Jongseok Kim(https://github.com/ozmig77)
 https://www.github.com/kyubyong/g2p
 '''
-from __future__ import print_function
-
-import tensorflow as tf
-
 from nltk import pos_tag
 from nltk.corpus import cmudict
 import nltk
+from nltk.tokenize import word_tokenize
+import numpy as np
+import codecs
+import re
+import os
+import unicodedata
+from builtins import str as unicode
+from expand import normalize_numbers
+
 try:
     nltk.data.find('taggers/averaged_perceptron_tagger.zip')
 except LookupError:
@@ -20,174 +25,168 @@ try:
 except LookupError:
     nltk.download('cmudict')
 
-from .train import Graph, hp, load_vocab
-from .expand import normalize_numbers
-
-import numpy as np
-import codecs
-import re
-import os
-import unicodedata
-from builtins import str as unicode
-
 dirname = os.path.dirname(__file__)
 
-cmu = cmudict.dict()
+def construct_homograph_dictionary():
+    f = os.path.join(dirname,'homographs.en')
+    homograph2features = dict()
+    for line in codecs.open(f, 'r', 'utf8').read().splitlines():
+        if line.startswith("#"): continue # comment
+        headword, pron1, pron2, pos1 = line.strip().split("|")
+        homograph2features[headword.lower()] = (pron1.split(), pron2.split(), pos1)
+    return homograph2features
 
-# Load vocab
-g2idx, idx2g, p2idx, idx2p = load_vocab()
+# def segment(text):
+#     '''
+#     Splits text into `tokens`.
+#     :param text: A string.
+#     :return: A list of tokens (string).
+#     '''
+#     print(text)
+#     text = re.sub('([.,?!]( |$))', r' \1', text)
+#     print(text)
+#     return text.split()
 
-# Load Graph
-g = tf.Graph()
-with g.as_default():
-    with tf.device('/cpu:0'):
-        graph = Graph(); print("Graph loaded for g2p")
-        saver = tf.train.Saver()
-config = tf.ConfigProto(
-             device_count={'GPU' : 0},
-             gpu_options=tf.GPUOptions(per_process_gpu_memory_fraction=0.0001)
-         )
+class G2p(object):
+    def __init__(self):
+        super().__init__()
+        self.graphemes = ["<pad>", "<unk>", "</s>"] + list("abcdefghijklmnopqrstuvwxyz")
+        self.phonemes = ["<pad>", "<unk>", "<s>", "</s>"] + ['AA0', 'AA1', 'AA2', 'AE0', 'AE1', 'AE2', 'AH0', 'AH1', 'AH2', 'AO0',
+                                                             'AO1', 'AO2', 'AW0', 'AW1', 'AW2', 'AY0', 'AY1', 'AY2', 'B', 'CH', 'D', 'DH',
+                                                             'EH0', 'EH1', 'EH2', 'ER0', 'ER1', 'ER2', 'EY0', 'EY1',
+                                                             'EY2', 'F', 'G', 'HH',
+                                                             'IH0', 'IH1', 'IH2', 'IY0', 'IY1', 'IY2', 'JH', 'K', 'L',
+                                                             'M', 'N', 'NG', 'OW0', 'OW1',
+                                                             'OW2', 'OY0', 'OY1', 'OY2', 'P', 'R', 'S', 'SH', 'T', 'TH',
+                                                             'UH0', 'UH1', 'UH2', 'UW',
+                                                             'UW0', 'UW1', 'UW2', 'V', 'W', 'Y', 'Z', 'ZH']
+        self.g2idx = {g: idx for idx, g in enumerate(self.graphemes)}
+        self.idx2g = {idx: g for idx, g in enumerate(self.graphemes)}
 
-g_sess = None # global session
-class Session: # make/remove global session
-    def __enter__(self):
-        global g_sess
-        if g_sess != None:
-            raise Exception('Session already exist in g2p')
-        g_sess = tf.Session(graph=g, config=config)
-        saver.restore(g_sess, tf.train.latest_checkpoint(os.path.join(dirname,hp.logdir)))
+        self.p2idx = {p: idx for idx, p in enumerate(self.phonemes)}
+        self.idx2p = {idx: p for idx, p in enumerate(self.phonemes)}
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        global g_sess
-        g_sess.close()
-        g_sess = None
+        self.cmu = cmudict.dict()
+        self.load_variables()
+        self.homograph2features = construct_homograph_dictionary()
 
+    def load_variables(self):
+        self.variables = np.load('checkpoint20.npz')
+        self.enc_emb = self.variables["enc_emb"]  # (29, 64). (len(graphemes), emb)
+        self.enc_w_ih = self.variables["enc_w_ih"]  # (3*128, 64)
+        self.enc_w_hh = self.variables["enc_w_hh"]  # (3*128, 128)
+        self.enc_b_ih = self.variables["enc_b_ih"]  # (3*128,)
+        self.enc_b_hh = self.variables["enc_b_hh"]  # (3*128,)
 
-def predict(words, sess):
-    '''
-    Returns predicted pronunciation of `words` which do NOT exist in the dictionary.
-    :param words: A list of words.
-    :return: pron: A list of phonemes
-    '''
-    if len(words) > hp.batch_size:
-        after = predict(words[hp.batch_size:], sess)
-        words = words[:hp.batch_size]
-    else:
-        after = []
-    x = np.zeros((len(words), hp.maxlen), np.int32)  # 0: <PAD>
-    for i, w in enumerate(words):
-        for j, g in enumerate((w + "E")[:hp.maxlen]):
-            x[i][j] = g2idx.get(g, 2)  # 2:<UNK>
+        self.dec_emb = self.variables["dec_emb"]  # (74, 64). (len(phonemes), emb)
+        self.dec_w_ih = self.variables["dec_w_ih"]  # (3*128, 64)
+        self.dec_w_hh = self.variables["dec_w_hh"]  # (3*128, 128)
+        self.dec_b_ih = self.variables["dec_b_ih"]  # (3*128,)
+        self.dec_b_hh = self.variables["dec_b_hh"]  # (3*128,)
+        self.fc_w = self.variables["fc_w"]  # (74, 128)
+        self.fc_b = self.variables["fc_b"]  # (74,)
 
-    ## Autoregressive inference
-    preds = np.zeros((len(x), hp.maxlen), np.int32)
-    for j in range(hp.maxlen):
-        _preds = sess.run(graph.preds, {graph.x: x, graph.y: preds})
-        preds[:, j] = _preds[:, j]
+    def sigmoid(self, x):
+        return 1 / (1 + np.exp(-x))
 
-    # convert to string
-    pron = []
-    for i in range(len(preds)):
-        p = [u"%s" % unicode(idx2p[idx]) for idx in preds[i]]  # Make p into unicode.
-        if "<EOS>" in p:
-            eos = p.index("<EOS>")
-            p = p[:eos]
-        pron.append(p)
+    def grucell(self, x, h, w_ih, w_hh, b_ih, b_hh):
+        rzn_ih = np.matmul(x, w_ih.T) + b_ih
+        rzn_hh = np.matmul(h, w_hh.T) + b_hh
 
-    return pron + after
+        rz_ih, n_ih = rzn_ih[:, :rzn_ih.shape[-1] * 2 // 3], rzn_ih[:, rzn_ih.shape[-1] * 2 // 3:]
+        rz_hh, n_hh = rzn_hh[:, :rzn_hh.shape[-1] * 2 // 3], rzn_hh[:, rzn_hh.shape[-1] * 2 // 3:]
 
-# Construct homograph dictionary
-f = os.path.join(dirname,'homographs.en')
-homograph2features = dict()
-for line in codecs.open(f, 'r', 'utf8').read().splitlines():
-    if line.startswith("#"): continue # comment
-    headword, pron1, pron2, pos1 = line.strip().split("|")
-    homograph2features[headword.lower()] = (pron1.split(), pron2.split(), pos1)
+        rz = self.sigmoid(rz_ih + rz_hh)
+        r, z = np.split(rz, 2, -1)
 
-def token2pron(token):
-    '''
-    Returns pronunciation of word based on its pos.
-    :param token: A tuple of (word, pos)
-    :return: A list of phonemes. If word is not in the dictionary, [] is returned.
-    '''
-    word, pos = token
+        n = np.tanh(n_ih + r * n_hh)
+        h = (1 - z) * n + z * h
 
-    if re.search("[a-z]", word) is None:
-        pron = [word]
+        return h
 
-    elif word in homograph2features: # Check homograph
-        pron1, pron2, pos1 = homograph2features[word]
-        if pos.startswith(pos1):
-            pron = pron1
-        else:
-            pron = pron2
-    elif word in cmu: # CMU dict
-        pron = cmu[word][0]
-    else:
-        return []
+    def gru(self, x, steps, w_ih, w_hh, b_ih, b_hh, h0=None):
+        if h0 is None:
+            h0 = np.zeros((x.shape[0], w_hh.shape[1]), np.float32)
+        h = h0  # initial hidden state
+        outputs = np.zeros((x.shape[0], steps, w_hh.shape[1]), np.float32)
+        for t in range(steps):
+            h = self.grucell(x[:, t, :], h, w_ih, w_hh, b_ih, b_hh)  # (b, h)
+            outputs[:, t, ::] = h
+        return outputs
 
-    return pron
+    def encode(self, word):
+        chars = list(word) + ["</s>"]
+        x = [self.g2idx.get(char, self.g2idx["<unk>"]) for char in chars]
+        x = np.take(self.enc_emb, np.expand_dims(x, 0), axis=0)
 
-def tokenize(text):
-    '''
-    Splits text into `tokens`.
-    :param text: A string.
-    :return: A list of tokens (string).
-    '''
-    text = re.sub('([.,?!]( |$))', r' \1', text)
-    return text.split()
+        return x
 
-def g2p(text):
-    '''
-    Returns the pronunciation of text.
-    :param text: A string. A sequence of words.
-    :return: A list of phonemes.
-    '''
-    # normalization
-    text = unicode(text)
-    text = normalize_numbers(text)
-    text = ''.join(char for char in unicodedata.normalize('NFD', text)
-                   if unicodedata.category(char) != 'Mn')  # Strip accents
-    text = text.lower()
-    text = re.sub("[^ a-z'.,?!\-]", "", text)
-    text = text.replace("i.e.", "that is")
-    text = text.replace("e.g.", "for example")
+    def predict(self, word):
+        # encoder
+        enc = self.encode(word)
+        enc = self.gru(enc, len(word) + 1, self.enc_w_ih, self.enc_w_hh,
+                       self.enc_b_ih, self.enc_b_hh, h0=np.zeros((1, self.enc_w_hh.shape[-1]), np.float32))
+        last_hidden = enc[:, -1, :]
 
-    # tokenization
-    words = tokenize(text)
-    tokens = pos_tag(words) # tuples of (word, tag)
+        # decoder
+        dec = np.take(self.dec_emb, [2], axis=0)  # 2: <s>
+        h = last_hidden
 
-    # g2p
-    oovs, u_loc = [], []
-    ret = []
-    for token in tokens:
-        pron = token2pron(token) # list of phonemes
-        if pron == []: # oov
-            oovs.append(token[0])
-            u_loc.append(len(ret))
-        ret.extend(pron)
-        ret.extend([" "])
+        preds = []
+        for i in range(20):
+            h = self.grucell(dec, h, self.dec_w_ih, self.dec_w_hh, self.dec_b_ih, self.dec_b_hh)  # (b, h)
+            logits = np.matmul(h, self.fc_w.T) + self.fc_b
+            pred = logits.argmax()
+            if pred == 3: break  # 3: </s>
+            preds.append(pred)
+            dec = np.take(self.dec_emb, [pred], axis=0)
 
-    if len(oovs)>0:
-        global g_sess
-        if g_sess is not None: # check global session
-            prons = predict(oovs, g_sess)
-            for i in range(len(oovs)-1,-1,-1):
-                    ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
-        else: # If global session is not defined, make new one as local.
-            with tf.Session(graph=g, config=config) as sess:
-                saver.restore(sess, tf.train.latest_checkpoint(os.path.join(dirname, hp.logdir)))
-                prons = predict(oovs, sess)
-                for i in range(len(oovs)-1,-1,-1):
-                    ret = ret[:u_loc[i]]+prons[i]+ret[u_loc[i]:]
-    return ret[:-1]
+        preds = [self.idx2p.get(idx, "<unk>") for idx in preds]
+        return preds
 
+    def __call__(self, text):
+        # preprocessing
+        text = unicode(text)
+        text = normalize_numbers(text)
+        text = ''.join(char for char in unicodedata.normalize('NFD', text)
+                       if unicodedata.category(char) != 'Mn')  # Strip accents
+        text = text.lower()
+        text = re.sub("[^ a-z'.,?!\-]", "", text)
+        text = text.replace("i.e.", "that is")
+        text = text.replace("e.g.", "for example")
+
+        # tokenization
+        words = word_tokenize(text)
+        tokens = pos_tag(words)  # tuples of (word, tag)
+
+        # steps
+        prons = []
+        for word, pos in tokens:
+            if re.search("[a-z]", word) is None:
+                pron = [word]
+
+            elif word in self.homograph2features:  # Check homograph
+                pron1, pron2, pos1 = self.homograph2features[word]
+                if pos.startswith(pos1):
+                    pron = pron1
+                else:
+                    pron = pron2
+            elif word in self.cmu:  # lookup CMU dict
+                pron = self.cmu[word][0]
+            else: # predict for oov
+                pron = self.predict(word)
+
+            prons.extend(pron)
+            prons.extend([" "])
+
+        return prons[:-1]
 
 if __name__ == '__main__':
     texts = ["I have $250 in my pocket.", # number -> spell-out
              "popular pets, e.g. cats and dogs", # e.g. -> for example
              "I refuse to collect the refuse around here.", # homograph
              "I'm an activationist."] # newly coined word
+    g2p = G2p()
     for text in texts:
         out = g2p(text)
         print(out)

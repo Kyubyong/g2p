@@ -12,7 +12,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
   name = 'g2p_en',
   packages = ['g2p_en'], # this must be the same as the name above
-  version = '1.0.0',
+  version = '2.0.0',
   description = 'A Simple Python Module for English Grapheme To Phoneme Conversion',
   long_description=long_description,
   author = 'Kyubyong Park & Jongseok Kim',
@@ -23,11 +23,9 @@ setup(
   classifiers = [],
   install_requires = [
     'numpy>=1.13.1',
-    'tensorflow >= 1.3.0',
     'nltk>=3.2.4',
     'inflect>=0.3.1',
     'distance>=0.1.3',
-    'future>=0.16.0'
   ],
   license='Apache Software License',
   include_package_data=True

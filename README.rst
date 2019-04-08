@@ -1,6 +1,8 @@
 g2p\_en: A Simple Python Module for English Grapheme To Phoneme Conversion
 ==========================================================================
 
+[Update] * We removed TensorFlow from the dependencies. After all, it changes its APIs quite often, and we don't expect you to have a GPU. Instead, NumPy is used for inference.
+
 This module is designed to convert English graphemes (spelling) to
 phonemes (pronunciation). It is considered essential in several tasks
 such as speech synthesis. Unlike many languages like Spanish or German
@@ -42,18 +44,16 @@ Algorithm
 Environment
 -----------
 
--  python 2.x or 3.x
+-  python 3.x
 
 Dependencies
 ------------
 
 -  numpy >= 1.13.1
--  tensorflow >= 1.3.0
 -  nltk >= 3.2.4
 -  python -m nltk.downloader "averaged\_perceptron\_tagger" "cmudict"
 -  inflect >= 0.3.1
 -  Distance >= 0.1.3
--  future >= 0.16.0
 
 Installation
 ------------
@@ -86,20 +86,12 @@ Usage
 
     text = "I refuse to collect the refuse around here."
     print(g2p(text))
-    >>>[u'AY1', ' ', u'R', u'IH0', u'F', u'Y', u'UW1', u'Z', ' ', u'T', u'UW1', ' ', u'K', u'AH0', u'L', u'EH1', u'K', u'T', ' ', u'DH', u'AH0', ' ', u'R', u'EH1', u'F', u'Y', u'UW2', u'Z', ' ', u'ER0', u'AW1', u'N', u'D', ' ', u'HH', u'EH1', u'R']
+    >>>['AY1', ' ', 'R', 'IH0', 'F', 'Y', 'UW1', 'Z', ' ', 'T', 'UW1', ' ', 'K', 'AH0', 'L', 'EH1', 'K', 'T', ' ', 'DH', 'AH0', ' ', 'R', 'EH1', 'F', 'Y', 'UW2', 'Z', ' ', 'ER0', 'AW1', 'N', 'D', ' ', 'HH', 'EH1', 'R', '.']
 
     text = "I am an activationist."
     print(g2p(text))
-    >>>[u'AY1', u'M', ' ', u'AE1', u'N', ' ', u'AE2', u'K', u'T', u'AH0', u'V', u'EY1', u'SH', u'AH0', u'N', u'IH0', u'S', u'T']
+    >>>['AY1', 'M', ' ', 'AE1', 'N', ' ', 'AE2', 'K', 'T', 'AH0', 'V', 'EY1', 'SH', 'AH0', 'N', 'IH0', 'S', 'T']
 
-If you need to convert lots of texts, you can use the global tf session.
-
-::
-
-    import g2p_en as g2p
-
-    with g2p.Session():
-        phs = [g2p.g2p(text) for text in texts]
 
 May, 2018.
 
