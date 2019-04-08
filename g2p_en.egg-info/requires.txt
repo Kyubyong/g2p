@@ -1,4 +1,0 @@
-numpy>=1.13.1
-nltk>=3.2.4
-inflect>=0.3.1
-distance>=0.1.3
