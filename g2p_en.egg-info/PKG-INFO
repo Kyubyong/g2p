@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: g2p-en
-Version: 1.0.0
+Version: 2.0.1
 Summary: A Simple Python Module for English Grapheme To Phoneme Conversion
 Home-page: https://github.com/Kyubyong/g2p
 Author: Kyubyong Park & Jongseok Kim
@@ -9,6 +9,8 @@ License: Apache Software License
 Download-URL: https://github.com/Kyubyong/g2p/archive/1.0.0.tar.gz
 Description: g2p\_en: A Simple Python Module for English Grapheme To Phoneme Conversion
         ==========================================================================
+        
+        [Update] * We removed TensorFlow from the dependencies. After all, it changes its APIs quite often, and we don't expect you to have a GPU. Instead, NumPy is used for inference.
         
         This module is designed to convert English graphemes (spelling) to
         phonemes (pronunciation). It is considered essential in several tasks
@@ -51,18 +53,16 @@ Description: g2p\_en: A Simple Python Module for English Grapheme To Phoneme Con
         Environment
         -----------
         
-        -  python 2.x or 3.x
+        -  python 3.x
         
         Dependencies
         ------------
         
         -  numpy >= 1.13.1
-        -  tensorflow >= 1.3.0
         -  nltk >= 3.2.4
         -  python -m nltk.downloader "averaged\_perceptron\_tagger" "cmudict"
         -  inflect >= 0.3.1
         -  Distance >= 0.1.3
-        -  future >= 0.16.0
         
         Installation
         ------------
@@ -91,24 +91,21 @@ Description: g2p\_en: A Simple Python Module for English Grapheme To Phoneme Con
         
         ::
         
-            from g2p_en import g2p
+            from g2p_en import G2p
+            
+            texts = ["I have $250 in my pocket.", # number -> spell-out
+                     "popular pets, e.g. cats and dogs", # e.g. -> for example
+                     "I refuse to collect the refuse around here.", # homograph
+                     "I'm an activationist."] # newly coined word
+            g2p = G2p()
+            for text in texts:
+                out = g2p(text)
+                print(out)
+            >>> ['AY1', ' ', 'HH', 'AE1', 'V', ' ', 'T', 'UW1', ' ', 'HH', 'AH1', 'N', 'D', 'R', 'AH0', 'D', ' ', 'F', 'IH1', 'F', 'T', 'IY0', ' ', 'D', 'AA1', 'L', 'ER0', 'Z', ' ', 'IH0', 'N', ' ', 'M', 'AY1', ' ', 'P', 'AA1', 'K', 'AH0', 'T', ' ', '.']
+            >>> ['P', 'AA1', 'P', 'Y', 'AH0', 'L', 'ER0', ' ', 'P', 'EH1', 'T', 'S', ' ', ',', ' ', 'F', 'AO1', 'R', ' ', 'IH0', 'G', 'Z', 'AE1', 'M', 'P', 'AH0', 'L', ' ', 'K', 'AE1', 'T', 'S', ' ', 'AH0', 'N', 'D', ' ', 'D', 'AA1', 'G', 'Z']
+            >>> ['AY1', ' ', 'R', 'IH0', 'F', 'Y', 'UW1', 'Z', ' ', 'T', 'UW1', ' ', 'K', 'AH0', 'L', 'EH1', 'K', 'T', ' ', 'DH', 'AH0', ' ', 'R', 'EH1', 'F', 'Y', 'UW2', 'Z', ' ', 'ER0', 'AW1', 'N', 'D', ' ', 'HH', 'IY1', 'R', ' ', '.']
+            >>> ['AY1', ' ', 'AH0', 'M', ' ', 'AE1', 'N', ' ', 'AE2', 'K', 'T', 'IH0', 'V', 'EY1', 'SH', 'AH0', 'N', 'IH0', 'S', 'T', ' ', '.']
         
-            text = "I refuse to collect the refuse around here."
-            print(g2p(text))
-            >>>[u'AY1', ' ', u'R', u'IH0', u'F', u'Y', u'UW1', u'Z', ' ', u'T', u'UW1', ' ', u'K', u'AH0', u'L', u'EH1', u'K', u'T', ' ', u'DH', u'AH0', ' ', u'R', u'EH1', u'F', u'Y', u'UW2', u'Z', ' ', u'ER0', u'AW1', u'N', u'D', ' ', u'HH', u'EH1', u'R']
-        
-            text = "I am an activationist."
-            print(g2p(text))
-            >>>[u'AY1', u'M', ' ', u'AE1', u'N', ' ', u'AE2', u'K', u'T', u'AH0', u'V', u'EY1', u'SH', u'AH0', u'N', u'IH0', u'S', u'T']
-        
-        If you need to convert lots of texts, you can use the global tf session.
-        
-        ::
-        
-            import g2p_en as g2p
-        
-            with g2p.Session():
-                phs = [g2p.g2p(text) for text in texts]
         
         May, 2018.
         

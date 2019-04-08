@@ -14,7 +14,7 @@ import re
 import os
 import unicodedata
 from builtins import str as unicode
-from expand import normalize_numbers
+from .expand import normalize_numbers
 
 try:
     nltk.data.find('taggers/averaged_perceptron_tagger.zip')
@@ -71,7 +71,7 @@ class G2p(object):
         self.homograph2features = construct_homograph_dictionary()
 
     def load_variables(self):
-        self.variables = np.load('checkpoint20.npz')
+        self.variables = np.load(os.path.join(dirname,'checkpoint20.npz'))
         self.enc_emb = self.variables["enc_emb"]  # (29, 64). (len(graphemes), emb)
         self.enc_w_ih = self.variables["enc_w_ih"]  # (3*128, 64)
         self.enc_w_hh = self.variables["enc_w_hh"]  # (3*128, 128)

@@ -1,6 +1,4 @@
 numpy>=1.13.1
-tensorflow>=1.3.0
 nltk>=3.2.4
 inflect>=0.3.1
 distance>=0.1.3
-future>=0.16.0

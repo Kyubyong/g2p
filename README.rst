@@ -82,15 +82,20 @@ Usage
 
 ::
 
-    from g2p_en import g2p
-
-    text = "I refuse to collect the refuse around here."
-    print(g2p(text))
-    >>>['AY1', ' ', 'R', 'IH0', 'F', 'Y', 'UW1', 'Z', ' ', 'T', 'UW1', ' ', 'K', 'AH0', 'L', 'EH1', 'K', 'T', ' ', 'DH', 'AH0', ' ', 'R', 'EH1', 'F', 'Y', 'UW2', 'Z', ' ', 'ER0', 'AW1', 'N', 'D', ' ', 'HH', 'EH1', 'R', '.']
-
-    text = "I am an activationist."
-    print(g2p(text))
-    >>>['AY1', 'M', ' ', 'AE1', 'N', ' ', 'AE2', 'K', 'T', 'AH0', 'V', 'EY1', 'SH', 'AH0', 'N', 'IH0', 'S', 'T']
+    from g2p_en import G2p
+    
+    texts = ["I have $250 in my pocket.", # number -> spell-out
+             "popular pets, e.g. cats and dogs", # e.g. -> for example
+             "I refuse to collect the refuse around here.", # homograph
+             "I'm an activationist."] # newly coined word
+    g2p = G2p()
+    for text in texts:
+        out = g2p(text)
+        print(out)
+    >>> ['AY1', ' ', 'HH', 'AE1', 'V', ' ', 'T', 'UW1', ' ', 'HH', 'AH1', 'N', 'D', 'R', 'AH0', 'D', ' ', 'F', 'IH1', 'F', 'T', 'IY0', ' ', 'D', 'AA1', 'L', 'ER0', 'Z', ' ', 'IH0', 'N', ' ', 'M', 'AY1', ' ', 'P', 'AA1', 'K', 'AH0', 'T', ' ', '.']
+    >>> ['P', 'AA1', 'P', 'Y', 'AH0', 'L', 'ER0', ' ', 'P', 'EH1', 'T', 'S', ' ', ',', ' ', 'F', 'AO1', 'R', ' ', 'IH0', 'G', 'Z', 'AE1', 'M', 'P', 'AH0', 'L', ' ', 'K', 'AE1', 'T', 'S', ' ', 'AH0', 'N', 'D', ' ', 'D', 'AA1', 'G', 'Z']
+    >>> ['AY1', ' ', 'R', 'IH0', 'F', 'Y', 'UW1', 'Z', ' ', 'T', 'UW1', ' ', 'K', 'AH0', 'L', 'EH1', 'K', 'T', ' ', 'DH', 'AH0', ' ', 'R', 'EH1', 'F', 'Y', 'UW2', 'Z', ' ', 'ER0', 'AW1', 'N', 'D', ' ', 'HH', 'IY1', 'R', ' ', '.']
+    >>> ['AY1', ' ', 'AH0', 'M', ' ', 'AE1', 'N', ' ', 'AE2', 'K', 'T', 'IH0', 'V', 'EY1', 'SH', 'AH0', 'N', 'IH0', 'S', 'T', ' ', '.']
 
 
 May, 2018.

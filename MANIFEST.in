@@ -1,2 +1,2 @@
 include g2p_en/homographs.en
-include g2p_en/logdir/*
+include g2p_en/checkpoint20.npz
