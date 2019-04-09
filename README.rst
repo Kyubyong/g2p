@@ -70,12 +70,6 @@ OR
 
 nltk package will be automatically downloaded at your first run.
 
-Training (Note that pretrained model is already included)
----------------------------------------------------------
-
-::
-
-    python train.py
 
 Usage
 -----
