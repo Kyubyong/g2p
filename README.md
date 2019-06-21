@@ -1,4 +1,4 @@
-# [UPDATE] g2p_en: A Simple Python Module for English Grapheme To Phoneme Conversion
+# g2pE: A Simple Python Module for English Grapheme To Phoneme Conversion
 
 * [v.2.0] We removed TensorFlow from the dependencies. After all, it changes its APIs quite often, and we don't expect you to have a GPU. Instead, NumPy is used for inference.
 
@@ -65,6 +65,23 @@ nltk package will be automatically downloaded at your first run.
     >>> ['AY1', ' ', 'R', 'IH0', 'F', 'Y', 'UW1', 'Z', ' ', 'T', 'UW1', ' ', 'K', 'AH0', 'L', 'EH1', 'K', 'T', ' ', 'DH', 'AH0', ' ', 'R', 'EH1', 'F', 'Y', 'UW2', 'Z', ' ', 'ER0', 'AW1', 'N', 'D', ' ', 'HH', 'IY1', 'R', ' ', '.']
     >>> ['AY1', ' ', 'AH0', 'M', ' ', 'AE1', 'N', ' ', 'AE2', 'K', 'T', 'IH0', 'V', 'EY1', 'SH', 'AH0', 'N', 'IH0', 'S', 'T', ' ', '.']
 
+## References
+
+If you use this code for research, please cite:
+
+```
+@misc{g2pE2019,
+  author = {Park, Kyubyong & Kim, Jongseok},
+  title = {g2pE},
+  year = {2019},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/Kyubyong/g2p}}
+}
+```
+
+## Cited in
+* [Learning pronunciation from a foreign language in speech synthesis networks](https://arxiv.org/abs/1811.09364)
 
 May, 2018.
 
