@@ -22,7 +22,7 @@ In this project, we employ a deep learning seq2seq framework based on TensorFlow
 ## Algorithm
 
 1. Spells out arabic numbers and some currency symbols. (e.g. $200 -> two hundred dollars) (This is borrowed from [Keith Ito's code](https://github.com/keithito/tacotron/blob/master/text/numbers.py))
-2. Attempts to retrieve the correct pronunciation for homographs based on their POS)
+2. Attempts to retrieve the correct pronunciation for heteronyms based on their POS)
 3. Looks up [The CMU Pronouncing Dictionary](http://www.speech.cs.cmu.edu/cgi-bin/cmudict) for non-homographs.
 4. For OOVs, we predict their pronunciations using our neural net model.
 
