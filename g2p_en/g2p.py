@@ -7,7 +7,8 @@ https://www.github.com/kyubyong/g2p
 from nltk import pos_tag
 from nltk.corpus import cmudict
 import nltk
-from nltk.tokenize import word_tokenize
+from nltk.tokenize import TweetTokenizer
+word_tokenize = TweetTokenizer().tokenize
 import numpy as np
 import codecs
 import re
