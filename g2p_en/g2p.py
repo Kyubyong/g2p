@@ -146,6 +146,15 @@ class G2p(object):
         return preds
 
     def __call__(self, text):
+      
+        if text.isnumeric() and len(text) > 36:
+            #for very bigs number
+            #just read the digits
+            prons = []
+            for i in range(len(text)):
+                prons += (self.__call__(text[i]))
+            return prons
+        
         # preprocessing
         text = unicode(text)
         text = normalize_numbers(text)
