@@ -288,7 +288,6 @@ class G2p(object):
         tokens = pos_tag(words)  # tuples of (word, tag)
 
         # steps
-        prons = []
         lookup_result_dict = {}
         for word, pos in tokens:
 
@@ -306,7 +305,7 @@ class G2p(object):
             elif word in self.cmu:  # lookup CMU dict
                 lookup_result = "CMU"
                 pron = self.cmu[word][0]
-                in_cmu = True
+
             else:  # predict for oov
                 lookup_result = "RNN"
                 pron = self.predict(word)
