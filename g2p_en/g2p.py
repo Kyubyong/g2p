@@ -269,13 +269,64 @@ class G2p(object):
 
         return prons[:-1]
 
-if __name__ == '__main__':
-    texts = ["I have $250 in my pocket.", # number -> spell-out
-             "popular pets, e.g. cats and dogs", # e.g. -> for example
-             "I refuse to collect the refuse around here.", # homograph
-             "I'm an activationist."] # newly coined word
+    def check_lookup(self, text):
+        # preprocessing
+        text = unicode(text)
+        text = normalize_numbers(text)
+        text = "".join(
+            char
+            for char in unicodedata.normalize("NFD", text)
+            if unicodedata.category(char) != "Mn"
+        )  # Strip accents
+        text = text.lower()
+        text = re.sub("[^ a-z'.,?!\-]", "", text)
+        text = text.replace("i.e.", "that is")
+        text = text.replace("e.g.", "for example")
+
+        # tokenization
+        words = word_tokenize(text)
+        tokens = pos_tag(words)  # tuples of (word, tag)
+
+        # steps
+        prons = []
+        lookup_result_dict = {}
+        for word, pos in tokens:
+
+            if re.search("[a-z]", word) is None:
+                lookup_result = "non-alphanumeric"
+                pron = [word]
+
+            elif word in self.homograph2features:  # Check homograph
+                lookup_result = "homograph"
+                pron1, pron2, pos1 = self.homograph2features[word]
+                if pos.startswith(pos1):
+                    pron = pron1
+                else:
+                    pron = pron2
+            elif word in self.cmu:  # lookup CMU dict
+                lookup_result = "CMU"
+                pron = self.cmu[word][0]
+                in_cmu = True
+            else:  # predict for oov
+                lookup_result = "RNN"
+                pron = self.predict(word)
+
+            if lookup_result in lookup_result_dict.keys():
+                lookup_result_dict[lookup_result].append(word)
+            else:
+                lookup_result_dict[lookup_result] = [word]
+
+        return lookup_result_dict
+
+
+if __name__ == "__main__":
+    texts = [
+        "I have $250 in my pocket.",  # number -> spell-out
+        "popular pets, e.g. cats and dogs",  # e.g. -> for example
+        "I refuse to collect the refuse around here.",  # homograph
+        "I'm an activationist.",
+    ]  # newly coined word
     g2p = G2p()
     for text in texts:
         out = g2p(text)
         print(out)
-
