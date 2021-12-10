@@ -7,13 +7,24 @@ https://www.github.com/kyubyong/g2p
 from nltk import pos_tag
 from nltk.corpus import cmudict
 import nltk
+from nltk.tokenize.casual import (
+    URLS,
+    EMOTICONS,
+    _replace_html_entities,
+    remove_handles,
+    reduce_lengthening,
+    EMOTICON_RE,
+    HANG_RE,
+    PHONE_REGEX,
+)
 from nltk.tokenize import TweetTokenizer
 
-word_tokenize = TweetTokenizer().tokenize
 import numpy as np
 import codecs
 import re
 import os
+import regex
+from typing import List
 import unicodedata
 from builtins import str as unicode
 from .expand import normalize_numbers
@@ -28,6 +39,92 @@ except LookupError:
     nltk.download("cmudict")
 
 dirname = os.path.dirname(__file__)
+
+
+class CMUDictTokenizer(TweetTokenizer):
+    _REGEXPS = (
+        URLS,
+        # ASCII Emoticons
+        EMOTICONS,
+        # HTML tags:
+        r"""<[^>\s]+>""",
+        # ASCII Arrows
+        r"""[\-]+>|<[\-]+""",
+        # Twitter username:
+        r"""(?:@[\w_]+)""",
+        # Twitter hashtags:
+        r"""(?:\#+[\w_]+[\w\'_\-]*[\w_]+)""",
+        # email addresses
+        r"""[\w.+-]+@[\w-]+\.(?:[\w-]\.?)+[\w-]""",
+        # Zero-Width-Joiner and Skin tone modifier emojis
+        """.(?:
+            [\U0001F3FB-\U0001F3FF]?(?:\u200d.[\U0001F3FB-\U0001F3FF]?)+
+            |
+            [\U0001F3FB-\U0001F3FF]
+        )""",
+        # Remaining word types:
+        r"""
+        (?:[a-zA-Z'](?:[a-zA-Z']|['\-_])+[a-zA-Z']) # Words with apostrophes or dashes.
+        |
+        (?:[+\-]?\d+[,/.:-]\d+[+\-]?)  # Numbers, including fractions, decimals.
+        |
+        (?:[\w_]+)                     # Words without apostrophes or dashes.
+        |
+        (?:\.(?:\s*\.){1,})            # Ellipsis dots.
+        |
+        (?:\S)                         # Everything else that isn't whitespace.
+        """,
+    )
+    _REGEXPS_PHONE = (_REGEXPS[0], PHONE_REGEX, *_REGEXPS[1:])
+    _WORD_RE = regex.compile(
+        f"({'|'.join(_REGEXPS)})",
+        regex.VERBOSE | regex.I | regex.UNICODE,
+    )
+    _PHONE_WORD_RE = regex.compile(
+        f"({'|'.join(_REGEXPS_PHONE)})",
+        regex.VERBOSE | regex.I | regex.UNICODE,
+    )
+
+    @property
+    def WORD_RE(self):
+        return self._WORD_RE
+
+    @property
+    def PHONE_WORD_RE(self):
+        return self._PHONE_WORD_RE
+
+    def tokenize(self, text: str) -> List[str]:
+        """Tokenize the input text.
+
+        :param text: str
+        :rtype: list(str)
+        :return: a tokenized list of strings; joining this list returns\
+        the original string if `preserve_case=False`.
+        """
+        # Fix HTML character entities:
+        text = _replace_html_entities(text)
+        # Remove username handles
+        if self.strip_handles:
+            text = remove_handles(text)
+        # Normalize word lengthening
+        if self.reduce_len:
+            text = reduce_lengthening(text)
+        # Shorten problematic sequences of characters
+        safe_text = HANG_RE.sub(r"\1\1\1", text)
+        # Recognise phone numbers during tokenization
+        if self.match_phone_numbers:
+            words = self.PHONE_WORD_RE.findall(safe_text)
+        else:
+            words = self.WORD_RE.findall(safe_text)
+        # Possibly alter the case, but avoid changing emoticons like :D into :d:
+        if not self.preserve_case:
+            words = list(
+                map((lambda x: x if EMOTICON_RE.search(x) else x.lower()), words)
+            )
+        return words
+
+
+tokenizer = CMUDictTokenizer()
 
 
 def construct_homograph_dictionary():
@@ -244,10 +341,8 @@ class G2p(object):
         text = text.replace("e.g.", "for example")
 
         # tokenization
-        words = word_tokenize(text)
+        words = tokenizer.tokenize(text)
         tokens = pos_tag(words)  # tuples of (word, tag)
-
-        # steps
         prons = []
         for word, pos in tokens:
             if re.search("[a-z]", word) is None:
@@ -284,7 +379,7 @@ class G2p(object):
         text = text.replace("e.g.", "for example")
 
         # tokenization
-        words = word_tokenize(text)
+        words = tokenizer.tokenize(text)
         tokens = pos_tag(words)  # tuples of (word, tag)
 
         # steps
