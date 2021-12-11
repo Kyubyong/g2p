@@ -5,7 +5,6 @@ By kyubyong park(kbpark.linguist@gmail.com) and Jongseok Kim(https://github.com/
 https://www.github.com/kyubyong/g2p
 """
 from nltk import pos_tag
-from nltk.corpus import cmudict
 import nltk
 from nltk.tokenize.casual import (
     URLS,
@@ -18,6 +17,7 @@ from nltk.tokenize.casual import (
     PHONE_REGEX,
 )
 from nltk.tokenize import TweetTokenizer
+from uberduct import uberduct
 
 import numpy as np
 import codecs
@@ -33,10 +33,6 @@ try:
     nltk.data.find("taggers/averaged_perceptron_tagger.zip")
 except LookupError:
     nltk.download("averaged_perceptron_tagger")
-try:
-    nltk.data.find("corpora/cmudict.zip")
-except LookupError:
-    nltk.download("cmudict")
 
 dirname = os.path.dirname(__file__)
 
@@ -232,7 +228,7 @@ class G2p(object):
         self.p2idx = {p: idx for idx, p in enumerate(self.phonemes)}
         self.idx2p = {idx: p for idx, p in enumerate(self.phonemes)}
 
-        self.cmu = cmudict.dict()
+        self.cmu = uberduct.dict()
         self.load_variables()
         self.homograph2features = construct_homograph_dictionary()
 
