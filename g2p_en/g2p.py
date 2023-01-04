@@ -71,6 +71,25 @@ class G2p(object):
         self.load_variables()
         self.homograph2features = construct_homograph_dictionary()
 
+    def load_custom_phonemes(self, file_path):
+        '''Load custom graphemes (spelling) to phonemes (pronunciation)
+        in the file, which has the same format with nltk's cmudict:
+            A 1 AH0
+            A. 1 EY1
+            A 2 EY1
+            A42128 1 EY1 F AO1 R T UW1 W AH1 N T UW1 EY1 T
+            AAA 1 T R IH2 P AH0 L EY1
+        '''
+        with open(file_path) as fin:
+            for line in fin:
+                if line[0] == '#':
+                    continue
+                word, left = line.strip().split(' ', maxsplit=1)
+                phonemes = left.split()[1:]
+                word = word.lower()
+                # just replace if word is in cmudict
+                self.cmu[word] = [phonemes]
+
     def load_variables(self):
         self.variables = np.load(os.path.join(dirname,'checkpoint20.npz'))
         self.enc_emb = self.variables["enc_emb"]  # (29, 64). (len(graphemes), emb)
