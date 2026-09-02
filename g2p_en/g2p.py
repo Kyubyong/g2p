@@ -17,10 +17,30 @@ import unicodedata
 from builtins import str as unicode
 from .expand import normalize_numbers
 
-try:
-    nltk.data.find('taggers/averaged_perceptron_tagger.zip')
-except LookupError:
-    nltk.download('averaged_perceptron_tagger')
+# NLTK 3.8.2 renamed the English perceptron tagger data package from
+# averaged_perceptron_tagger to averaged_perceptron_tagger_eng, and pos_tag
+# loads whichever name the installed NLTK expects: from 3.8.2 on, nltk.tag maps
+# 'eng' to 'taggers/averaged_perceptron_tagger_eng/'. Fetching a fixed name
+# therefore breaks on one side or the other - fetching only the old one leaves
+# pos_tag raising LookupError on any current NLTK, which is why `import g2p_en`
+# fails there.
+#
+# Checking the name is not enough either: the download index is shared across
+# NLTK versions, so nltk.download('averaged_perceptron_tagger_eng') succeeds
+# even on 3.8.1, which then still wants the old name. A successful download does
+# not mean the installed NLTK will use it.
+#
+# So ask NLTK. Call pos_tag, and if the data it wants is missing, fetch a
+# candidate and try again.
+for _tagger in ('averaged_perceptron_tagger_eng', 'averaged_perceptron_tagger'):
+    try:
+        nltk.pos_tag(['g2p'])
+        break
+    except LookupError:
+        nltk.download(_tagger)
+else:
+    # Nothing worked; let pos_tag raise so the message names what is missing.
+    nltk.pos_tag(['g2p'])
 try:
     nltk.data.find('corpora/cmudict.zip')
 except LookupError:
